@@ -1,10 +1,10 @@
 # Data-Hexify.pm -- Perl extension for hexdumping arbitrary data
-# RCS Info        : $Id: Data-Hexify.pm,v 1.4 2004/06/29 17:38:39 jv Exp $
+# RCS Info        : $Id: Data-Hexify.pm,v 1.5 2004/09/18 21:09:08 jv Exp $
 # Author          : Johan Vromans
 # Created On      : Sat Jun 19 12:31:21 2004
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Jun 29 19:36:59 2004
-# Update Count    : 26
+# Last Modified On: Sat Sep 18 23:08:35 2004
+# Update Count    : 28
 # Status          : Unknown, Use with caution!
 
 package Data::Hexify;
@@ -23,7 +23,7 @@ our @EXPORT_OK   = ( @{ $EXPORT_TAGS{all} } );
 
 ################ Preamble ################
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Carp;
 
@@ -232,7 +232,7 @@ the beginning of the data.
 
 The number of bytes to be processed. Default is to proceed all data.
 
-=item chunksize
+=item chunk
 
 The number of bytes to be processed per line of output. Default is 16.
 
