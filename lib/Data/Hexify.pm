@@ -1,10 +1,10 @@
 # Data-Hexify.pm -- Perl extension for hexdumping arbitrary data
-# RCS Info        : $Id: Data-Hexify.pm,v 1.5 2004/09/18 21:09:08 jv Exp $
+# RCS Info        : $Id: Data-Hexify.pm,v 1.6 2004/11/05 09:17:14 jv Exp $
 # Author          : Johan Vromans
 # Created On      : Sat Jun 19 12:31:21 2004
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Sep 18 23:08:35 2004
-# Update Count    : 28
+# Last Modified On: Fri Nov  5 10:17:11 2004
+# Update Count    : 37
 # Status          : Unknown, Use with caution!
 
 package Data::Hexify;
@@ -23,7 +23,7 @@ our @EXPORT_OK   = ( @{ $EXPORT_TAGS{all} } );
 
 ################ Preamble ################
 
-our $VERSION = '0.02';
+our $VERSION = '1.00';
 
 use Carp;
 
@@ -45,6 +45,7 @@ sub Hexify {
     my $chunk  = 16;		# bytes per line
     my $first  = $start;	# number of 1st byte
     my $dups   = 0;		# output identical lines
+    my $group  = 1;		# group per # bytes
 
     my $show   = sub { my $t = shift;
 		       $t =~ tr /\000-\037\177-\377/./;
@@ -62,6 +63,7 @@ sub Hexify {
 		     length     => $lastplusone - $start,
 		     duplicates => $dups,
 		     first      => undef,
+		     group	=> 1,
 		   );
 
 	if ( @_ == 1 ) {	# hash ref
@@ -83,6 +85,7 @@ sub Hexify {
 	$chunk  = delete($atts{chunk});
 	$show   = delete($atts{showdata});
 	$dups   = delete($atts{duplicates});
+	$group  = delete($atts{group});
 	$first  = defined($atts{first}) ? $atts{first}  : $start;
 	delete($atts{first});
 
@@ -97,9 +100,14 @@ sub Hexify {
 	$lastplusone = length($$dr)
 	  if $lastplusone > length($$dr);
 	$chunk = 16 if $chunk <= 0;
+	if ( $chunk % $group ) {
+	    croak("Hexify: chunk ($chunk) must be a multiple of group ($group)");
+	}
     }
+    $group *= 2;
 
-    my $fmt = "  %04x: %-" . (3 * $chunk - 1) . "s  %-" . $chunk . "s\n";
+    #my $fmt = "  %04x: %-" . (3 * $chunk - 1) . "s  %-" . $chunk . "s\n";
+    my $fmt = "  %04x: %-" . (2*$chunk + $chunk/($group/2) - 1) . "s  %-" . $chunk . "s\n";
     my $ret = "";
 
     if ( $align && (my $r = $first % $chunk) ) {
@@ -111,9 +119,8 @@ sub Hexify {
 	my $n = $lastplusone - $start;
 	$n = $firstn if $n > $firstn;
 	my $ss = substr($$dr, $start, $n);
-	(my $hex = unpack("H*",$ss)) =~ s/(..)(?!$)/$1 /g;
-	$ret .= sprintf($fmt, $first,
-			$lead . $lead . $lead . $hex,
+	(my $hex = $lead . $lead . unpack("H*",$ss)) =~ s/(.{$group})(?!$)/$1 /g;
+	$ret .= sprintf($fmt, $first, $hex,
 			$lead . $show->($ss));
 	$start += $n;
 	$first += $chunk;
@@ -144,7 +151,7 @@ sub Hexify {
 	}
 	$same = $ss;
 
-	(my $hex = unpack("H*", $ss)) =~ s/(..)(?!$)/$1 /g;
+	(my $hex = unpack("H*", $ss)) =~ s/(.{$group})(?!$)/$1 /g;
 	$ret .= sprintf($fmt, $first, $hex, $show->($ss));
     }
     continue {
@@ -235,6 +242,11 @@ The number of bytes to be processed. Default is to proceed all data.
 =item chunk
 
 The number of bytes to be processed per line of output. Default is 16.
+
+=item group
+
+The number of bytes to be grouped together. Default is 1 (no
+grouping). If used, it must be a divisor of the chunk size.
 
 =item duplicates
 
